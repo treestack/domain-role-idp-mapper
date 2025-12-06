@@ -15,14 +15,8 @@ This Identity Provider mapper grants a configured role when a user's email domai
 - Java 17
 
 ## Installation
-1. Build the project:
-   ```sh
-   mvn -q -DskipTests package
-   ```
-2. Copy the resulting JAR from `target/` into your Keycloak `providers/` directory.
-3. Restart Keycloak.
-
-> Note: The POM no longer uses an absolute `outputDirectory`. This is intentional to keep the project portable. Use your own deployment process to move the JAR.
+1. Copy the latest release into your Keycloak `providers/` directory.
+2. Restart Keycloak.
 
 ## Usage
 1. In the realm admin console, go to Identity Providers and select your IdP.
@@ -34,7 +28,6 @@ This Identity Provider mapper grants a configured role when a user's email domai
    - `Fallback Role` (optional): Role to grant when the domain does not match.
 
 ## Configuration Details
-- Matching is case‑insensitive and trims whitespace.
 - If the user email is missing or invalid (no `@`), no role is granted.
 - If a configured role name cannot be resolved in the realm, no role is granted for that branch.
 
@@ -49,7 +42,7 @@ Requirements: JDK 17, Maven 3.9+
 
 Run tests:
 ```sh
-mvn -q -DskipITs test
+mvn -q test
 ```
 
 Build a classifier targeted JAR (default profile is `keycloak-22`):
