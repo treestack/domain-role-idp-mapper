@@ -1,25 +1,24 @@
 # Domain Role IdP Mapper
 
-Assign Keycloak realm roles to brokered users based on their email domain.
+Assign Keycloak roles to brokered users based on their email domain.
 
 This Identity Provider mapper grants a configured role when a user's email domain matches a list of allowed domains. If the email domain does not match, it can optionally grant a fallback role.
 
 ## Features
 - Space‑separated list of allowed domains (case‑insensitive)
 - Grants a role on match; optional fallback role otherwise
-- Safe: only grants roles the user does not already have
-- Works with any Identity Provider (federated/brokered login)
+- Only grants roles the user does not already have
 
 ## Compatibility
 - Built and tested against Keycloak 22.x
-- Java 17
+- Java 17+
 
 ## Installation
 1. Copy the latest release into your Keycloak `providers/` directory.
 2. Restart Keycloak.
 
 ## Usage
-1. In the realm admin console, go to Identity Providers and select your IdP.
+1. Select your IdP in the Identity Providers configuration.
 2. Open the Mappers tab → Create mapper.
 3. Choose Mapper Type: `Email Domain → Role Mapper`.
 4. Configure properties:
@@ -30,12 +29,6 @@ This Identity Provider mapper grants a configured role when a user's email domai
 ## Configuration Details
 - If the user email is missing or invalid (no `@`), no role is granted.
 - If a configured role name cannot be resolved in the realm, no role is granted for that branch.
-
-## Example
-Allowed domains: `example.com corp.local`
-
-- `alice@example.com` → grant `matchedRole`
-- `bob@other.net` → grant `fallbackRole` (if configured)
 
 ## Development
 Requirements: JDK 17, Maven 3.9+
