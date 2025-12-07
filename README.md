@@ -1,3 +1,5 @@
+[![Release JAR](https://github.com/treestack/domain-role-idp-mapper/actions/workflows/release.yml/badge.svg)](https://github.com/treestack/domain-role-idp-mapper/actions/workflows/release.yml)
+
 # Domain Role IdP Mapper
 
 Assign Keycloak roles to brokered users based on their email domain.
@@ -18,6 +20,9 @@ This Identity Provider mapper grants a configured role when a user's email domai
 2. Restart Keycloak.
 
 ## Usage
+
+![](/doc/idp-mapper.png?raw=true "Identity Provider Mapper Configuration")
+
 1. Select your IdP in the Identity Providers configuration.
 2. Open the Mappers tab → Create mapper.
 3. Choose Mapper Type: `Email Domain → Role Mapper`.
