@@ -157,7 +157,7 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
     /**
      * Load and normalize configuration values from the mapper model.
      */
-    private static MapperConfig loadConfig(RealmModel realm, IdentityProviderMapperModel mapperModel) {
+    static MapperConfig loadConfig(RealmModel realm, IdentityProviderMapperModel mapperModel) {
         Map<String, String> cfg = mapperModel.getConfig();
         RoleModel matched = findRole(realm, cfg.get(CFG_MATCHED_ROLE));
         RoleModel fallback = findRole(realm, cfg.get(CFG_FALLBACK_ROLE));
@@ -172,15 +172,15 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
         );
     }
 
-    private static boolean isValidEmail(@Nullable String email) {
+    static boolean isValidEmail(@Nullable String email) {
         return email != null && email.contains("@");
     }
 
-    private static String extractDomain(String email) {
+    static String extractDomain(String email) {
         return email.substring(email.indexOf('@') + 1).toLowerCase();
     }
 
-    private static Set<String> parseAllowedDomains(@Nullable String rawDomains) {
+    static Set<String> parseAllowedDomains(@Nullable String rawDomains) {
         return Optional.ofNullable(rawDomains)
                 .map(s -> Arrays.asList(s.split(" ")))
                 .orElse(List.of())
@@ -191,7 +191,7 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
                 .collect(Collectors.toSet());
     }
 
-    private static @Nullable RoleModel findRole(RealmModel realm, @Nullable String roleName) {
+    static @Nullable RoleModel findRole(RealmModel realm, @Nullable String roleName) {
         if (roleName == null) {
             LOG.debugf("No role configured (null) while resolving role in realm '%s'", realm.getName());
             return null;
@@ -203,28 +203,58 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
             return roleModel;
         }
 
-        String[] parts = roleName.split("[.]", 2);
-        if (parts.length == 2) {
-            String clientId = parts[0];
-            String clientRoleName = parts[1];
-            ClientModel client = realm.getClientByClientId(clientId);
-            if (client != null) {
-                RoleModel clientRole = client.getRole(clientRoleName);
-                if (clientRole != null) {
-                    LOG.tracef("Resolved client role '%s' for client '%s' in realm '%s'", clientRoleName, clientId, realm.getName());
-                    return clientRole;
-                }
-            }
+        roleModel = resolveClientRole(realm, roleName);
+        if (roleModel != null) {
+            return roleModel;
         }
 
         LOG.warnf("Configured role '%s' not found in realm '%s' (as realm or client role)", roleName, realm.getName());
         return null;
     }
 
-    private record MapperConfig(
+    /**
+     * Resolve a client role given a composite role name in the format "clientId.roleName".
+     */
+    static @Nullable RoleModel resolveClientRole(RealmModel realm, String roleName) {
+        // Keycloak's ProviderConfigProperty stores the role as 'namespaced' strings like "roleName"
+        // or "clientId.roleName". This is a fundamentally poor design choice because both client IDs
+        // and role names can contain dots, so this is quite ambiguous.
+
+        for (int i = 0; i < roleName.length(); i++) {
+            if (roleName.charAt(i) != '.') continue;
+
+            String clientId = roleName.substring(0, i);
+            String clientRoleName = roleName.substring(i + 1);
+
+            if (clientId.isEmpty() || clientRoleName.isEmpty()) {
+                continue;
+            }
+
+            // This is potentially more efficient than iterating over all clients
+            // using realm.getClientsStream(). But if I'm wrong, feel free to reach out.
+            ClientModel client = realm.getClientByClientId(clientId);
+            if (client == null) {
+                continue;
+            }
+
+            RoleModel clientRole = client.getRole(clientRoleName);
+            if (clientRole != null) {
+                LOG.tracef(
+                        "Resolved client role '%s' for client '%s' in realm '%s'",
+                        clientRoleName, clientId, realm.getName()
+                );
+                return clientRole;
+            }
+        }
+
+        LOG.warnf("Could not resolve client role from name '%s' in realm '%s'", roleName, realm.getName());
+        return null;
+    }
+
+    record MapperConfig(
             Set<String> allowedDomains,
             @Nullable RoleModel matchedRole,
             @Nullable RoleModel fallbackRole
-    )  {}
+    ) {}
 
 }
