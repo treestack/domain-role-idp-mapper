@@ -98,6 +98,7 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
 
     @Override
     public void updateBrokeredUser(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
+        LOG.debugf("updateBrokeredUser invoked for user=%s, realm=%s, brokeredId=%s", user.getUsername(), realm.getName(), context.getBrokerUserId());
         super.updateBrokeredUser(session, realm, user, mapperModel, context);
         assignRole(realm, user, mapperModel);
     }
@@ -112,23 +113,43 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
 
         String email = user.getEmail();
         if (!isValidEmail(email)) {
+            LOG.debugf("Skipping role assignment for user=%s due to missing/invalid email: %s", user.getUsername(), email);
             return;
         }
 
         String domain = extractDomain(email);
-        MapperConfig cfg = loadConfig(mapperModel);
-        RoleModel matched = findRole(realm, cfg.matchedRoleName());
-        RoleModel fallback = findRole(realm, cfg.fallbackRoleName());
+        MapperConfig cfg = loadConfig(realm, mapperModel);
+
+        LOG.debugf("User %s has email domain '%s'. Allowed domains configured: %s; matchedRole=%s; fallbackRole=%s",
+                user.getUsername(),
+                domain,
+                cfg.allowedDomains(),
+                cfg.matchedRole != null ? cfg.matchedRole.getName() : null,
+                cfg.fallbackRole != null ? cfg.fallbackRole.getName() : null);
+
+        if (cfg.allowedDomains().isEmpty()) {
+            LOG.warnf("No allowed domains configured for mapper '%s' in realm '%s'", mapperModel.getName(), realm.getName());
+        }
 
         if (cfg.allowedDomains().contains(domain)) {
-            if (matched != null && !user.hasRole(matched)) {
-                LOG.infof("Granting role %s to user %s due to matching domain %s", matched, user.getUsername(), domain);
-                user.grantRole(matched);
+            if (cfg.matchedRole != null && !user.hasRole(cfg.matchedRole)) {
+                LOG.infof("Granting role %s to user %s due to matching domain %s", cfg.matchedRole, user.getUsername(), domain);
+                user.grantRole(cfg.matchedRole);
+            } else if (cfg.matchedRole != null) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debugf("User %s already has matched role %s; no action taken", user.getUsername(), cfg.matchedRole.getName());
+                }
+            } else {
+                LOG.warnf("Matched role not configured while domain '%s' is allowed; user=%s, realm=%s", domain, user.getUsername(), realm.getName());
             }
         } else {
-            if (fallback != null && !user.hasRole(fallback)) {
-                LOG.infof("Granting fallback role %s to user %s", fallback, user.getUsername());
-                user.grantRole(fallback);
+            if (cfg.fallbackRole != null && !user.hasRole(cfg.fallbackRole)) {
+                LOG.infof("Granting fallback role %s to user %s", cfg.fallbackRole, user.getUsername());
+                user.grantRole(cfg.fallbackRole);
+            } else if (cfg.fallbackRole != null) {
+                LOG.debugf("User %s already has fallback role %s; no action taken", user.getUsername(), cfg.fallbackRole.getName());
+            } else {
+                LOG.debugf("No fallback role configured and domain '%s' not in allowed list; no role changes for user %s", domain, user.getUsername());
             }
         }
     }
@@ -136,12 +157,18 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
     /**
      * Load and normalize configuration values from the mapper model.
      */
-    private static MapperConfig loadConfig(IdentityProviderMapperModel mapperModel) {
+    private static MapperConfig loadConfig(RealmModel realm, IdentityProviderMapperModel mapperModel) {
         Map<String, String> cfg = mapperModel.getConfig();
+        RoleModel matched = findRole(realm, cfg.get(CFG_MATCHED_ROLE));
+        RoleModel fallback = findRole(realm, cfg.get(CFG_FALLBACK_ROLE));
+
+        LOG.tracef("Loaded mapper config for realm=%s: allowedDomains='%s', matchedRole='%s', fallbackRole='%s'",
+                realm.getName(), cfg.get(CFG_DOMAINS), cfg.get(CFG_MATCHED_ROLE), cfg.get(CFG_FALLBACK_ROLE));
+
         return new MapperConfig(
                 parseAllowedDomains(cfg.get(CFG_DOMAINS)),
-                cfg.get(CFG_MATCHED_ROLE),
-                cfg.get(CFG_FALLBACK_ROLE)
+                matched,
+                fallback
         );
     }
 
@@ -165,13 +192,39 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
     }
 
     private static @Nullable RoleModel findRole(RealmModel realm, @Nullable String roleName) {
-        return roleName != null ? realm.getRole(roleName) : null;
+        if (roleName == null) {
+            LOG.debugf("No role configured (null) while resolving role in realm '%s'", realm.getName());
+            return null;
+        }
+
+        RoleModel roleModel = realm.getRole(roleName);
+        if (roleModel != null) {
+            LOG.tracef("Resolved realm role '%s' in realm '%s'", roleName, realm.getName());
+            return roleModel;
+        }
+
+        String[] parts = roleName.split("[.]", 2);
+        if (parts.length == 2) {
+            String clientId = parts[0];
+            String clientRoleName = parts[1];
+            ClientModel client = realm.getClientByClientId(clientId);
+            if (client != null) {
+                RoleModel clientRole = client.getRole(clientRoleName);
+                if (clientRole != null) {
+                    LOG.tracef("Resolved client role '%s' for client '%s' in realm '%s'", clientRoleName, clientId, realm.getName());
+                    return clientRole;
+                }
+            }
+        }
+
+        LOG.warnf("Configured role '%s' not found in realm '%s' (as realm or client role)", roleName, realm.getName());
+        return null;
     }
 
     private record MapperConfig(
             Set<String> allowedDomains,
-            @Nullable String matchedRoleName,
-            @Nullable String fallbackRoleName
+            @Nullable RoleModel matchedRole,
+            @Nullable RoleModel fallbackRole
     )  {}
 
 }
