@@ -4,7 +4,7 @@
 
     <groupId>de.treestack.auth</groupId>
     <artifactId>domain-role-idp-mapper</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 
     <name>domain-role-idp-mapper</name>
     <description>Assign Keycloak roles to external users based on their email-domain.</description>
