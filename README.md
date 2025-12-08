@@ -9,6 +9,36 @@ Assign Keycloak roles to brokered users based on their email domain.
 
 This Identity Provider mapper grants a configured role when a user's email domain matches a list of allowed domains. If the email domain does not match, it can optionally grant a fallback role.
 
+## Security implications
+
+> [!WARNING]  
+> This mapper assigns Keycloak roles based solely on the email domain provided by the external Identity Provider (e.g. Microsoft Entra ID / MS365).
+> This has direct security implications for both authorization and operations.
+> 
+> **It's obvious that this is not intended for use in high-security environments!**
+
+The core rule implemented is:
+> If the user’s email domain matches one of the configured domains, assign the matched role; otherwise assign the fallback role.
+
+This means that full trust is placed in the Identity Provider’s email claim. If users can self-edit their primary email, this becomes a privilege-escalation vector. Also make sure that guest or external accounts must not be able to receive internal domains. 
+
+Account takeover at the IdP equals privilege escalation in Keycloak: A compromised MS365 account immediately receives the mapped Keycloak role.
+Authorization security therefore directly depends on the IdP's security.
+
+### Recommendations:
+- Restrict the IdP to trusted tenants and issuers only.
+- Prevent guest users from receiving internal domains.
+- Keep domain-matched roles strictly scoped.[^1]
+- Add additional security measures if applicable. For MS365, prefer adding a tenant ID (tid) check in addition to domain matching, enforce tenant restrictions.
+
+The fallback role is granted to all users whose email does not match any configured domain. If the fallback role is too powerful, all unmatched users gain unintended access.
+
+[^1]: The roles assigned via email-domain matching must be strictly limited in scope. It should only grant the minimum permissions required for users authenticated via that domain. Broad system, administrative, or cross-tenant privileges must never be bound solely to a domain-based rule.
+
+### Recommendations:
+- Keep the fallback role minimally privileged.
+- Consider using no fallback role at all if users should have zero access by default.
+
 ## Features
 - Space‑separated list of allowed domains (case‑insensitive)
 - Grants a role on match; optional fallback role otherwise
