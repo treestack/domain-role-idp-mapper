@@ -25,7 +25,7 @@ This means that full trust is placed in the Identity Provider’s email claim. I
 Account takeover at the IdP equals privilege escalation in Keycloak: A compromised MS365 account immediately receives the mapped Keycloak role.
 Authorization security therefore directly depends on the IdP's security.
 
-### Recommendations:
+Recommendations:
 - Restrict the IdP to trusted tenants and issuers only.
 - Prevent guest users from receiving internal domains.
 - Keep domain-matched roles strictly scoped.[^1]
@@ -35,7 +35,7 @@ The fallback role is granted to all users whose email does not match any configu
 
 [^1]: The roles assigned via email-domain matching must be strictly limited in scope. It should only grant the minimum permissions required for users authenticated via that domain. Broad system, administrative, or cross-tenant privileges must never be bound solely to a domain-based rule.
 
-### Recommendations:
+Recommendations:
 - Keep the fallback role minimally privileged.
 - Consider using no fallback role at all if users should have zero access by default.
 
