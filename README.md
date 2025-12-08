@@ -62,8 +62,12 @@ Recommendations:
 1. Select your IdP in the Identity Providers configuration.
 2. Open the Mappers tab → Create mapper.
 3. Choose *Mapper Type*: `Email Domain → Role Mapper`.
-4. Select an appropriate *Sync mode override*, see Keycloak's [Server Administration Guide](https://www.keycloak.org/docs/latest/server_admin) for details.
-5. Configure properties:
+4. Select an appropriate *Sync mode override*:
+   - `Import` to run the mapper on first login only or
+   - `Force` to run it on the first and any subsequent login.
+   
+   See Keycloak's [Server Administration Guide](https://www.keycloak.org/docs/latest/server_admin) for details.
+6. Configure properties:
    - `Allowed E‑Mail Domain(s)`: Space‑separated list (e.g. `example.com example.org`).
    - `Role for Matching Domains`: Role to grant when the user's email domain is in the allowed list.
    - `Fallback Role` (optional): Role to grant when the domain does not match.
