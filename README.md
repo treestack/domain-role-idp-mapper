@@ -67,11 +67,12 @@ Recommendations:
    - `Force` to run it on the first and any subsequent login.
    
    See Keycloak's [Server Administration Guide](https://www.keycloak.org/docs/latest/server_admin) for details.
-5.	Select the Domain Matching Mode:
+5. `Allowed E‑Mail Domain(s)`: Space‑separated list (e.g. `example.com example.org`).
+6.	Select the Domain Match Mode:
     - `Exact` for strict domain match,
     - `Wildcard` supports `*` e.g. for subdomains, or
     - `Regex` for full Java regex support (Handle with care!).
-6. `Allowed E‑Mail Domain(s)`: Space‑separated list (e.g. `example.com example.org`).
+
 7. `Role for Matching Domains`: Role to grant when the user's email domain is in the allowed list.
 8. `Fallback Role` (optional): Role to grant when the domain does not match.
 
