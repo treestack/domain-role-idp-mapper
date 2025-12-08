@@ -30,5 +30,10 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: SonarQubeScan
         uses: SonarSource/sonarqube-scan-action@v6
+        with:
+          args: >
+            -Dsonar.organization=treestack
+            -Dsonar.projectKey=treestack_domain-role-idp-mapper
         env: 
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        
