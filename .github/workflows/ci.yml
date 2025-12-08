@@ -1,9 +1,10 @@
-name: Release
+name: CI
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - "main"
+  pull_request:
 
 jobs:
   build:
@@ -19,9 +20,9 @@ jobs:
           distribution: temurin
           java-version: 17
       - name: Build with Maven
-        run: mvn clean package -P${{ matrix.profile }}
-      - name: Upload JAR to Release
-        uses: softprops/action-gh-release@v1
+        run: mvn clean verify -P${{ matrix.profile }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
         with:
-          files: target/*.jar
-      
+          files: target/site/jacoco/jacoco.xml
+          fail_ci_if_error: true
