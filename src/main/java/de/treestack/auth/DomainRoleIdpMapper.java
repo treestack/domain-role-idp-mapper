@@ -33,6 +33,7 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
     public static final String PROVIDER_ID = "domain-role-idp-mapper";
 
     private static final String CFG_DOMAINS = "allowedDomains";
+    private static final String CFG_DOMAIN_MATCH_MODE = "domainMatchMode";
     private static final String CFG_MATCHED_ROLE = "matchedRole";
     private static final String CFG_FALLBACK_ROLE = "fallbackRole";
 
@@ -59,7 +60,19 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
         fallbackRole.setLabel("Fallback Role");
         fallbackRole.setType(ProviderConfigProperty.ROLE_TYPE);
 
+        var matchMode = new ProviderConfigProperty();
+        matchMode.setName(CFG_DOMAIN_MATCH_MODE);
+        matchMode.setLabel("Domain Match Mode");
+        matchMode.setHelpText("Defines how email domains are matched against the configured domain list. Possible " +
+                "values are 'exact' for exact domain matches (e.g. example.org), 'wildcard' supports * as a " +
+                "placeholder (e.g. *.example.org.de) and 'regex' allows full Java regular expressions but " +
+                "also carries the highest risk of misconfiguration.");
+        matchMode.setType(ProviderConfigProperty.LIST_TYPE);
+        matchMode.setOptions(List.of("Exact", "Wildcard", "Regex"));
+        matchMode.setDefaultValue("Exact");
+
         props.add(domains);
+        props.add(matchMode);
         props.add(matchedRole);
         props.add(fallbackRole);
 
@@ -130,11 +143,40 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
             LOG.warnf("No allowed domains configured for mapper '%s' in realm '%s'", mapperModel.getName(), realm.getName());
         }
 
-        if (cfg.allowedDomains().contains(domain)) {
+        DomainMatchMode mode = DomainMatchMode.from(mapperModel.getConfig().get(CFG_DOMAIN_MATCH_MODE));
+        if (matchesDomain(domain, cfg.allowedDomains(), mode)) {
             grantRole(user, cfg.matchedRole);
         } else {
             grantRole(user, cfg.fallbackRole);
         }
+    }
+
+    static boolean matchesDomain(
+            String domain,
+            Set<String> configuredDomains,
+            DomainMatchMode mode) {
+
+        if (domain == null || configuredDomains == null || configuredDomains.isEmpty()) {
+            return false;
+        }
+
+        return switch (mode) {
+            case EXACT -> configuredDomains.contains(domain);
+
+            case WILDCARD -> configuredDomains.stream()
+                    .map(pattern -> pattern.replace(".", "\\.")
+                            .replace("*", ".*"))
+                    .anyMatch(domain::matches);
+
+            case REGEX -> configuredDomains.stream().anyMatch(pattern -> {
+                try {
+                    return domain.matches(pattern);
+                } catch (Exception e) {
+                    LOG.warnf(e, "Failed to match '%s'", pattern);
+                    return false;
+                }
+            });
+        };
     }
 
     static void grantRole(UserModel user, @Nullable RoleModel role) {
