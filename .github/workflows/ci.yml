@@ -28,3 +28,7 @@ jobs:
           files: target/site/jacoco/jacoco.xml
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
+      - name: SonarQubeScan
+        uses: SonarSource/sonarqube-scan-action@v6
+        env: 
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
