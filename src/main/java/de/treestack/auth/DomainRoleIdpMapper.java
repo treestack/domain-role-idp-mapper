@@ -99,7 +99,6 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
     @Override
     public void updateBrokeredUser(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         LOG.debugf("updateBrokeredUser invoked for user=%s, realm=%s, brokeredId=%s", user.getUsername(), realm.getName(), context.getBrokerUserId());
-        super.updateBrokeredUser(session, realm, user, mapperModel, context);
         assignRole(realm, user, mapperModel);
     }
 
@@ -132,26 +131,23 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
         }
 
         if (cfg.allowedDomains().contains(domain)) {
-            if (cfg.matchedRole != null && !user.hasRole(cfg.matchedRole)) {
-                LOG.infof("Granting role %s to user %s due to matching domain %s", cfg.matchedRole, user.getUsername(), domain);
-                user.grantRole(cfg.matchedRole);
-            } else if (cfg.matchedRole != null) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debugf("User %s already has matched role %s; no action taken", user.getUsername(), cfg.matchedRole.getName());
-                }
-            } else {
-                LOG.warnf("Matched role not configured while domain '%s' is allowed; user=%s, realm=%s", domain, user.getUsername(), realm.getName());
-            }
+            grantRole(user, cfg.matchedRole);
         } else {
-            if (cfg.fallbackRole != null && !user.hasRole(cfg.fallbackRole)) {
-                LOG.infof("Granting fallback role %s to user %s", cfg.fallbackRole, user.getUsername());
-                user.grantRole(cfg.fallbackRole);
-            } else if (cfg.fallbackRole != null) {
-                LOG.debugf("User %s already has fallback role %s; no action taken", user.getUsername(), cfg.fallbackRole.getName());
-            } else {
-                LOG.debugf("No fallback role configured and domain '%s' not in allowed list; no role changes for user %s", domain, user.getUsername());
-            }
+            grantRole(user, cfg.fallbackRole);
         }
+    }
+
+    static void grantRole(UserModel user, @Nullable RoleModel role) {
+        if (role == null) {
+            LOG.debugf("No role configured; no role changes for user %s", user.getUsername());
+            return;
+        }
+        if (user.hasRole(role)) {
+            LOG.debugf("User %s already has role %s; no action taken", user.getUsername(), role.getName());
+            return;
+        }
+        LOG.infof("Granting role %s to user %s", role, user.getUsername());
+        user.grantRole(role);
     }
 
     /**
@@ -217,34 +213,26 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
      */
     static @Nullable RoleModel resolveClientRole(RealmModel realm, String roleName) {
         // Keycloak's ProviderConfigProperty stores the role as 'namespaced' strings like "roleName"
-        // or "clientId.roleName". This is a fundamentally poor design choice because both client IDs
-        // and role names can contain dots, so this is quite ambiguous.
+        // or "clientId.roleName". Both client IDs and role names can contain dots, so this is ambiguous.
 
-        for (int i = 0; i < roleName.length(); i++) {
-            if (roleName.charAt(i) != '.') continue;
+        int index = roleName.indexOf('.');
 
-            String clientId = roleName.substring(0, i);
-            String clientRoleName = roleName.substring(i + 1);
+        while (index > 0 && index < roleName.length() - 1) {
+            String clientId = roleName.substring(0, index);
+            String clientRoleName = roleName.substring(index + 1);
 
-            if (clientId.isEmpty() || clientRoleName.isEmpty()) {
-                continue;
-            }
-
-            // This is potentially more efficient than iterating over all clients
-            // using realm.getClientsStream(). But if I'm wrong, feel free to reach out.
             ClientModel client = realm.getClientByClientId(clientId);
-            if (client == null) {
-                continue;
+            if (client != null) {
+                RoleModel clientRole = client.getRole(clientRoleName);
+                if (clientRole != null) {
+                    LOG.tracef(
+                            "Resolved client role '%s' for client '%s' in realm '%s'",
+                            clientRoleName, clientId, realm.getName()
+                    );
+                    return clientRole;
+                }
             }
-
-            RoleModel clientRole = client.getRole(clientRoleName);
-            if (clientRole != null) {
-                LOG.tracef(
-                        "Resolved client role '%s' for client '%s' in realm '%s'",
-                        clientRoleName, clientId, realm.getName()
-                );
-                return clientRole;
-            }
+            index = roleName.indexOf('.', index + 1);
         }
 
         LOG.warnf("Could not resolve client role from name '%s' in realm '%s'", roleName, realm.getName());
@@ -255,6 +243,6 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
             Set<String> allowedDomains,
             @Nullable RoleModel matchedRole,
             @Nullable RoleModel fallbackRole
-    ) {}
-
+    ) {
+    }
 }
