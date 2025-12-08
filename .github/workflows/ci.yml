@@ -28,12 +28,14 @@ jobs:
           files: target/site/jacoco/jacoco.xml
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
-      - name: Sonar Scan
+      - name: Build and analyze
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: >
-          mvn sonar:sonar
-          -P${{ matrix.profile }}
-          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
-          -Dsonar.projectKey=treestack_domain-role-idp-mapper
+          mvn -B verify -P${{ matrix.profile }}
+          org.sonarsource.scanner.maven:sonar-maven-plugin:sonar 
           -Dsonar.organization=treestack
-          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+          -Dsonar.projectKey=treestack_domain-role-idp-mapper
+          
+          
         
