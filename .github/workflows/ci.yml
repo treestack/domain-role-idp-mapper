@@ -36,6 +36,7 @@ jobs:
             -Dsonar.projectKey=treestack_domain-role-idp-mapper
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
             -Dsonar.java.binaries=target/classes
+            -Dsonar.tests=src/test/java
         env: 
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         
