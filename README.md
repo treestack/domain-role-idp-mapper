@@ -46,6 +46,7 @@ Recommendations:
 
 ## Compatibility
 - Built and tested against Keycloak 22.x
+- Tested with Keycloak 26.x
 - Java 17+
 
 ## Installation
