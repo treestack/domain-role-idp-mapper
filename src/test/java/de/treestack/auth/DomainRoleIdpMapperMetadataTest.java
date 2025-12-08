@@ -2,38 +2,41 @@ package de.treestack.auth;
 
 import org.junit.jupiter.api.Test;
 
-public class DomainRoleIdpMapperMetadataTest {
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
+class DomainRoleIdpMapperMetadataTest {
 
     static DomainRoleIdpMapper classUnderTest = new DomainRoleIdpMapper();
 
     @Test
     void returnsId() {
-        assert classUnderTest.getId().equals(DomainRoleIdpMapper.PROVIDER_ID);
+        assertEquals(DomainRoleIdpMapper.PROVIDER_ID, classUnderTest.getId());
     }
 
     @Test
     void returnsDisplayType() {
-        assert !classUnderTest.getDisplayType().isEmpty();
+        assertFalse(classUnderTest.getDisplayType().isEmpty());
     }
 
     @Test
     void returnsDisplayCategory() {
-        assert !classUnderTest.getDisplayCategory().isEmpty();
+        assertFalse(classUnderTest.getDisplayCategory().isEmpty());
     }
 
     @Test
     void hasHelpText() {
-        assert !classUnderTest.getHelpText().isEmpty();
+        assertFalse(classUnderTest.getHelpText().isEmpty());
     }
 
     @Test
     void hasConfigProperties() {
-        assert !classUnderTest.getConfigProperties().isEmpty();
+        assertFalse(classUnderTest.getConfigProperties().isEmpty());
     }
 
     @Test
     void returnsCompatibleProviders() {
-        assert classUnderTest.getCompatibleProviders().length > 0;
+        assertEquals("*", classUnderTest.getCompatibleProviders()[0]);
     }
 
 }

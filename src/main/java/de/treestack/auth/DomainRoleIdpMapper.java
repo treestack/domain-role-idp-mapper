@@ -39,22 +39,22 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
     private static final List<ProviderConfigProperty> CONFIG_PROPERTIES;
 
     static {
-        List<ProviderConfigProperty> props = new ArrayList<>();
+        var props = new ArrayList<ProviderConfigProperty>();
 
         // Keycloak doesn't support MULTIVALUED_STRING_TYPE for IdP mappers
         // Maybe related to this? https://github.com/keycloak/keycloak/issues/30168
-        ProviderConfigProperty domains = new ProviderConfigProperty();
+        var domains = new ProviderConfigProperty();
         domains.setName(CFG_DOMAINS);
         domains.setLabel("Allowed E-Mail Domain(s)");
         domains.setHelpText("Multiple domains can be separated by space");
         domains.setType(ProviderConfigProperty.STRING_TYPE);
 
-        ProviderConfigProperty matchedRole = new ProviderConfigProperty();
+        var matchedRole = new ProviderConfigProperty();
         matchedRole.setName(CFG_MATCHED_ROLE);
         matchedRole.setLabel("Role for Matching Domains");
         matchedRole.setType(ProviderConfigProperty.ROLE_TYPE);
 
-        ProviderConfigProperty fallbackRole = new ProviderConfigProperty();
+        var fallbackRole = new ProviderConfigProperty();
         fallbackRole.setName(CFG_FALLBACK_ROLE);
         fallbackRole.setLabel("Fallback Role");
         fallbackRole.setType(ProviderConfigProperty.ROLE_TYPE);
