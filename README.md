@@ -1,4 +1,4 @@
-[![Release JAR](https://github.com/treestack/domain-role-idp-mapper/actions/workflows/release.yml/badge.svg)](https://github.com/treestack/domain-role-idp-mapper/actions/workflows/release.yml)
+[![CI](https://github.com/treestack/domain-role-idp-mapper/actions/workflows/ci.yml/badge.svg)](https://github.com/treestack/domain-role-idp-mapper/actions/workflows/ci.yml)
 [![GitHub Release](https://img.shields.io/github/release/treestack/domain-role-idp-mapper.svg?style=flat)]() 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Donate to MSF](https://img.shields.io/badge/Donate-MSF-red)](https://www.msf.org/donate)
