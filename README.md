@@ -1,6 +1,6 @@
 [![CI](https://github.com/treestack/domain-role-idp-mapper/actions/workflows/ci.yml/badge.svg)](https://github.com/treestack/domain-role-idp-mapper/actions/workflows/ci.yml)
-[![GitHub Release](https://img.shields.io/github/release/treestack/domain-role-idp-mapper.svg?style=flat)]() 
-[![codecov](https://codecov.io/gh/treestack/domain-role-idp-mapper/graph/badge.svg?token=WQCLA80WY5)](https://codecov.io/gh/treestack/domain-role-idp-mapper)
+[![GitHub Release](https://img.shields.io/github/release/treestack/domain-role-idp-mapper.svg?style=flat)]()
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=treestack_domain-role-idp-mapper&metric=coverage)](https://sonarcloud.io/summary/new_code?id=treestack_domain-role-idp-mapper)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=treestack_domain-role-idp-mapper&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=treestack_domain-role-idp-mapper)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Donate to MSF](https://img.shields.io/badge/Donate-MSF-red)](https://www.msf.org/donate)
