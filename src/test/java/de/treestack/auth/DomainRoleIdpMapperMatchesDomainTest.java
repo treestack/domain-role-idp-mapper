@@ -27,21 +27,22 @@ class DomainRoleIdpMapperMatchesDomainTest {
             Set<String> domains = Set.of("*.treestack.de");
 
             assertTrue(matchesDomain("dev.treestack.de", domains, DomainMatchMode.WILDCARD));
-            assertTrue(matchesDomain("api.dev.treestack.de", domains, DomainMatchMode.WILDCARD));
 
             assertFalse(matchesDomain("treestack.de", domains, DomainMatchMode.WILDCARD));
             assertFalse(matchesDomain("eviltreestack.de", domains, DomainMatchMode.WILDCARD));
+            assertFalse(matchesDomain("api.dev.treestack.de", domains, DomainMatchMode.WILDCARD));
         }
 
         @Test
         void when_matchModeWildcard_and_multipleDomains_expect_matchSubdomainsOnly() {
-            Set<String> domains = Set.of("*.treestack.de", "*.partner.org");
+            Set<String> domains = Set.of("*.treestack.de", "*.partner.org", "ex*mple.org");
 
             assertTrue(matchesDomain("dev.treestack.de", domains, DomainMatchMode.WILDCARD));
             assertTrue(matchesDomain("eu.partner.org", domains, DomainMatchMode.WILDCARD));
 
             assertFalse(matchesDomain("treestack.de", domains, DomainMatchMode.WILDCARD));
             assertFalse(matchesDomain("partner.org", domains, DomainMatchMode.WILDCARD));
+            assertFalse(matchesDomain("explodingkittentemple.org", domains, DomainMatchMode.WILDCARD));
         }
 
         @Test

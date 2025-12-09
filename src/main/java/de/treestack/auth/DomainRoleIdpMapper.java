@@ -140,7 +140,7 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
                 cfg.fallbackRole != null ? cfg.fallbackRole.getName() : null);
 
         if (cfg.allowedDomains().isEmpty()) {
-            LOG.warnf("No allowed domains configured for mapper '%s' in realm '%s'", mapperModel.getName(), realm.getName());
+            LOG.debugf("No allowed domains configured for mapper '%s' in realm '%s'", mapperModel.getName(), realm.getName());
         }
 
         DomainMatchMode mode = DomainMatchMode.from(mapperModel.getConfig().get(CFG_DOMAIN_MATCH_MODE));
@@ -161,22 +161,54 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
         }
 
         return switch (mode) {
-            case EXACT -> configuredDomains.contains(domain);
-
-            case WILDCARD -> configuredDomains.stream()
-                    .map(pattern -> pattern.replace(".", "\\.")
-                            .replace("*", ".*"))
-                    .anyMatch(domain::matches);
-
-            case REGEX -> configuredDomains.stream().anyMatch(pattern -> {
-                try {
-                    return domain.matches(pattern);
-                } catch (Exception e) {
-                    LOG.warnf(e, "Failed to match '%s'", pattern);
-                    return false;
-                }
-            });
+            case EXACT -> matchExact(domain, configuredDomains);
+            case WILDCARD -> matchWildcard(domain, configuredDomains);
+            case REGEX -> matchRegex(domain, configuredDomains);
         };
+    }
+
+    static boolean matchExact(String domain, Set<String> configuredDomains) {
+        return configuredDomains.contains(domain);
+    }
+
+    static boolean matchWildcard(String domain, Set<String> configuredDomains) {
+        return configuredDomains.stream().anyMatch(pattern -> {
+            if (pattern == null || pattern.isEmpty()) return false;
+
+            String[] labels = pattern.split("\\.");
+            if (Arrays.stream(labels).anyMatch(String::isEmpty)) {
+                LOG.warnf("Invalid wildcard domain pattern '%s' (empty label)", pattern);
+                return false;
+            }
+
+            StringBuilder regex = new StringBuilder();
+            for (int i = 0; i < labels.length; i++) {
+                String label = labels[i];
+                if (i > 0) regex.append("\\.");
+                if ("*".equals(label)) {
+                    // match exactly one DNS label (no dots)
+                    regex.append("[^.]+");
+                } else if (label.indexOf('*') >= 0) {
+                    // Disallow '*' within a label
+                    LOG.warnf("Invalid wildcard domain pattern '%s' (asterisk within label)", pattern);
+                    return false;
+                } else {
+                    regex.append(java.util.regex.Pattern.quote(label));
+                }
+            }
+            return domain.matches(regex.toString());
+        });
+    }
+
+    static boolean matchRegex(String domain, Set<String> configuredDomains) {
+        return configuredDomains.stream().anyMatch(pattern -> {
+            try {
+                return domain.matches(pattern);
+            } catch (Exception e) {
+                LOG.warnf(e, "Failed to match '%s'", pattern);
+                return false;
+            }
+        });
     }
 
     static void grantRole(UserModel user, @Nullable RoleModel role) {
@@ -215,17 +247,21 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
     }
 
     static String extractDomain(String email) {
-        return email.substring(email.indexOf('@') + 1).toLowerCase();
+        return email.substring(email.indexOf('@') + 1).toLowerCase(Locale.ROOT);
     }
 
+    /**
+     * Parse a raw string of allowed domains (split by whitespace or ",")
+     * into a normalized set of domain strings.
+     */
     static Set<String> parseAllowedDomains(@Nullable String rawDomains) {
         return Optional.ofNullable(rawDomains)
-                .map(s -> Arrays.asList(s.split(" ")))
+                .map(s -> Arrays.asList(s.split("[\\s,]+")))
                 .orElse(List.of())
                 .stream()
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
-                .map(String::toLowerCase)
+                .map(d -> d.toLowerCase(Locale.ROOT))
                 .collect(Collectors.toSet());
     }
 
