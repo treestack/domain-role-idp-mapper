@@ -24,37 +24,43 @@ class DomainRoleIdpMapperResolveClientRoleTest {
     RoleModel role;
 
     @Test
-    void returnsClientRole_whenClientAndRoleExist() {
+    void when_clientAndRoleExist_expect_returnsClientRole() {
+        // Arrange
         when(realm.getName()).thenReturn("test");
         when(realm.getClientByClientId("app")) .thenReturn(client);
         when(client.getRole("reader")) .thenReturn(role);
 
+        // Act
         RoleModel resolved = DomainRoleIdpMapper.resolveClientRole(realm, "app.reader");
 
+        // Assert
         assertSame(role, resolved);
         verify(realm).getClientByClientId("app");
         verify(client).getRole("reader");
     }
 
     @Test
-    void returnsNull_whenNoDotOrNoMatch() {
+    void when_noDot_expect_returnsNull() {
         when(realm.getName()).thenReturn("test");
-
-        // No dot → method will iterate and never enter the body, produce warning and return null
         assertNull(DomainRoleIdpMapper.resolveClientRole(realm, "realmRoleName"));
+    }
 
-        // Dot present but no client
+    @Test
+    void when_clientMissing_expect_returnsNull() {
         when(realm.getClientByClientId("missing")).thenReturn(null);
         assertNull(DomainRoleIdpMapper.resolveClientRole(realm, "missing.role"));
+    }
 
-        // Client exists but role missing
+    @Test
+    void when_roleMissing_expect_returnsNull() {
         when(realm.getClientByClientId("app")).thenReturn(client);
         when(client.getRole("unknown")).thenReturn(null);
         assertNull(DomainRoleIdpMapper.resolveClientRole(realm, "app.unknown"));
     }
 
     @Test
-    void triesAllPossibleSplits_whenMultipleDots_present() {
+    void when_multipleDotsPresent_expect_triesAllPossibleSplits() {
+        // Arrange
         when(realm.getName()).thenReturn("test");
 
         // Input: "a.b.c". The method will try:
@@ -64,8 +70,10 @@ class DomainRoleIdpMapperResolveClientRoleTest {
         when(realm.getClientByClientId("a.b")).thenReturn(clientAB);
         when(clientAB.getRole("c")).thenReturn(role);
 
+        // Act
         RoleModel resolved = DomainRoleIdpMapper.resolveClientRole(realm, "a.b.c");
 
+        // Assert
         assertSame(role, resolved);
         verify(realm).getClientByClientId("a");
         verify(realm).getClientByClientId("a.b");
@@ -73,7 +81,7 @@ class DomainRoleIdpMapperResolveClientRoleTest {
     }
 
     @Test
-    void skipsEmptyClientOrRoleSegments_andReturnsNull() {
+    void when_roleSegmentsAreMissing_expect_skipsEmpty() {
         when(realm.getName()).thenReturn("test");
 
         // Leading dot → empty client id

@@ -41,91 +41,123 @@ class DomainRoleIdpMapperAssignRoleTest {
     }
 
     @Test
-    void assignsMatchedClientRole_whenDomainMatches() {
+    void when_domainMatches_expect_assignMatchedRole() {
+        // Arrange
         cfg.put("allowedDomains", "example.com");
         cfg.put("matchedRole", "app.viewer");
         when(mapperModel.getConfig()).thenReturn(cfg);
         when(user.getEmail()).thenReturn("user@example.com");
         when(user.getUsername()).thenReturn("alice");
-
         when(realm.getRole("app.viewer")).thenReturn(null); // ensure realm role path is skipped
         when(realm.getClientByClientId("app")).thenReturn(client);
         when(client.getRole("viewer")).thenReturn(matchedRole);
         when(user.hasRole(matchedRole)).thenReturn(false);
 
+        // Act
         DomainRoleIdpMapper.assignRole(realm, user, mapperModel);
 
+        // Assert
         verify(user).grantRole(matchedRole);
         verify(user, never()).grantRole(fallbackRole);
     }
 
     @Test
-    void assignsFallbackClientRole_whenDomainDoesNotMatch() {
+    void when_domainDoesNotMatch_expect_assignFallbackRole() {
+        // Arrange
         cfg.put("allowedDomains", "example.com");
         cfg.put("matchedRole", "realm-role");
         cfg.put("fallbackRole", "client-x.reader");
         when(mapperModel.getConfig()).thenReturn(cfg);
         when(user.getEmail()).thenReturn("user@other.net");
         when(user.getUsername()).thenReturn("bob");
-
-        // matched role is a realm role but irrelevant here; ensure resolution returns null
         when(realm.getRole("realm-role")).thenReturn(null);
         when(realm.getRole("client-x.reader")).thenReturn(null);
         when(realm.getClientByClientId("client-x")).thenReturn(client);
         when(client.getRole("reader")).thenReturn(fallbackRole);
         when(user.hasRole(fallbackRole)).thenReturn(false);
 
+        // Act
         DomainRoleIdpMapper.assignRole(realm, user, mapperModel);
 
+        // Assert
         verify(user).grantRole(fallbackRole);
         verify(user, never()).grantRole(matchedRole);
     }
 
     @Test
-    void doesNothing_whenClientOrClientRoleMissing() {
+    void when_clientMissing_expect_doesNothing() {
+        // Arrange
         cfg.put("allowedDomains", "example.com");
         cfg.put("matchedRole", "missing-client.viewer");
         when(mapperModel.getConfig()).thenReturn(cfg);
         when(user.getEmail()).thenReturn("user@example.com");
-
-        // Case 1: client missing
         when(realm.getRole("missing-client.viewer")).thenReturn(null);
         when(realm.getClientByClientId("missing-client")).thenReturn(null);
 
+        // Act
         DomainRoleIdpMapper.assignRole(realm, user, mapperModel);
-        verify(user, never()).grantRole(any());
 
-        // Case 2: client exists but role missing
-        reset(user, realm, client);
+        // Assert
+        verify(user, never()).grantRole(any());
+    }
+
+    @Test
+    void when_clientRoleMissing_expect_doesNothing() {
+        // Arrange
+        cfg.put("allowedDomains", "example.com");
+        cfg.put("matchedRole", "missing-client.viewer");
         when(mapperModel.getConfig()).thenReturn(cfg);
         when(user.getEmail()).thenReturn("user@example.com");
         when(realm.getRole("missing-client.viewer")).thenReturn(null);
         when(realm.getClientByClientId("missing-client")).thenReturn(client);
         when(client.getRole("viewer")).thenReturn(null);
 
+        // Act
         DomainRoleIdpMapper.assignRole(realm, user, mapperModel);
+
+        // Assert
         verify(user, never()).grantRole(any());
     }
 
     @Test
-    void doesNotGrantClientRole_ifUserAlreadyHasIt() {
+    void when_userAlreadyHasRole_expect_doesNotGrantClientRole() {
+        // Arrange
         cfg.put("allowedDomains", "example.com");
         cfg.put("matchedRole", "my-client.admin");
         when(mapperModel.getConfig()).thenReturn(cfg);
         when(user.getEmail()).thenReturn("owner@example.com");
-
         when(realm.getRole("my-client.admin")).thenReturn(null);
         when(realm.getClientByClientId("my-client")).thenReturn(client);
         when(client.getRole("admin")).thenReturn(matchedRole);
         when(user.hasRole(matchedRole)).thenReturn(true);
 
+        // Act
         DomainRoleIdpMapper.assignRole(realm, user, mapperModel);
 
+        // Assert
         verify(user, never()).grantRole(matchedRole);
     }
 
     @Test
-    void assignsMatchedRole_whenDomainMatches() {
+    void when_userAlreadyHasRole_expect_doesNotGrantRole() {
+        // Arrange
+        cfg.put("allowedDomains", "example.com");
+        cfg.put("matchedRole", "role-matched");
+        when(mapperModel.getConfig()).thenReturn(cfg);
+        when(user.getEmail()).thenReturn("user@example.com");
+        when(realm.getRole("role-matched")).thenReturn(matchedRole);
+        when(user.hasRole(matchedRole)).thenReturn(true);
+
+        // Act
+        DomainRoleIdpMapper.assignRole(realm, user, mapperModel);
+
+        // Assert
+        verify(user, never()).grantRole(matchedRole);
+    }
+
+    @Test
+    void when_domainMatches_expect_assignsMatchedRole() {
+        // Arrange
         cfg.put("allowedDomains", "example.com");
         cfg.put("matchedRole", "role-matched");
         when(mapperModel.getConfig()).thenReturn(cfg);
@@ -134,14 +166,17 @@ class DomainRoleIdpMapperAssignRoleTest {
         when(realm.getRole("role-matched")).thenReturn(matchedRole);
         when(user.hasRole(matchedRole)).thenReturn(false);
 
+        // Act
         DomainRoleIdpMapper.assignRole(realm, user, mapperModel);
 
+        // Assert
         verify(user).grantRole(matchedRole);
         verify(user, never()).grantRole(fallbackRole);
     }
 
     @Test
-    void assignsFallbackRole_whenDomainDoesNotMatch_andFallbackConfigured() {
+    void when_domainDoesNotMatch_andFallbackConfigured_expect_assignsFallbackRole() {
+        // Arrange
         cfg.put("allowedDomains", "example.com test.org");
         cfg.put("matchedRole", "role-matched");
         cfg.put("fallbackRole", "role-fallback");
@@ -152,26 +187,41 @@ class DomainRoleIdpMapperAssignRoleTest {
         when(realm.getRole("role-fallback")).thenReturn(fallbackRole);
         when(user.hasRole(fallbackRole)).thenReturn(false);
 
+        // Act
         DomainRoleIdpMapper.assignRole(realm, user, mapperModel);
 
+        // Assert
         verify(user).grantRole(fallbackRole);
         verify(user, never()).grantRole(matchedRole);
     }
 
     @Test
-    void doesNothing_whenEmailIsNullOrInvalid() {
+    void when_emailIsNull_expect_doesNothing() {
+        // Arrange
         when(user.getEmail()).thenReturn(null);
-        DomainRoleIdpMapper.assignRole(realm, user, mapperModel);
-        verify(user, never()).grantRole(ArgumentMatchers.any());
 
-        reset(user);
-        when(user.getEmail()).thenReturn("no-at-symbol");
+        // Act
         DomainRoleIdpMapper.assignRole(realm, user, mapperModel);
+
+        // Assert
         verify(user, never()).grantRole(ArgumentMatchers.any());
     }
 
     @Test
-    void handlesCaseAndWhitespaceInDomains() {
+    void when_emailIsNullOrInvalid_expect_doesNothing() {
+        // Arrange
+        when(user.getEmail()).thenReturn("no-at-symbol");
+
+        // Act
+        DomainRoleIdpMapper.assignRole(realm, user, mapperModel);
+
+        // Assert
+        verify(user, never()).grantRole(ArgumentMatchers.any());
+    }
+
+    @Test
+    void when_userHadStrokeWhileTyping_expect_shrugItOff() {
+        // Arrange
         cfg.put("allowedDomains", "  Example.com   TEST.Org  ");
         cfg.put("matchedRole", "role-matched");
         when(mapperModel.getConfig()).thenReturn(cfg);
@@ -180,36 +230,28 @@ class DomainRoleIdpMapperAssignRoleTest {
         when(realm.getRole("role-matched")).thenReturn(matchedRole);
         when(user.hasRole(matchedRole)).thenReturn(false);
 
+        // Act
         DomainRoleIdpMapper.assignRole(realm, user, mapperModel);
 
+        // Assert
         verify(user).grantRole(matchedRole);
     }
 
-    @Test
-    void doesNotGrantRole_ifUserAlreadyHasIt() {
-        cfg.put("allowedDomains", "example.com");
-        cfg.put("matchedRole", "role-matched");
-        when(mapperModel.getConfig()).thenReturn(cfg);
-        when(user.getEmail()).thenReturn("user@example.com");
-        when(realm.getRole("role-matched")).thenReturn(matchedRole);
-        when(user.hasRole(matchedRole)).thenReturn(true);
 
-        DomainRoleIdpMapper.assignRole(realm, user, mapperModel);
-
-        verify(user, never()).grantRole(matchedRole);
-    }
 
     @Test
-    void doesNothing_whenConfiguredRoleNamesResolveToNull() {
+    void when_configuredRoleNamesResolveToNull_expect_doesNothing() {
+        // Arrange
         cfg.put("allowedDomains", "example.com other.net");
         cfg.put("matchedRole", "role-matched");
         cfg.put("fallbackRole", "role-fallback");
         when(mapperModel.getConfig()).thenReturn(cfg);
         when(user.getEmail()).thenReturn("user@other.net");
-        // realm.getRole returns null by default
 
+        // Act
         DomainRoleIdpMapper.assignRole(realm, user, mapperModel);
 
+        // Assert
         verify(user, never()).grantRole(any());
     }
 }
