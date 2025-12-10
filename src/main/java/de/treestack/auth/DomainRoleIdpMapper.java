@@ -11,19 +11,28 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Keycloak Identity Provider mapper that assigns a realm role based on the email domain
- * of the federated/brokered user. If the email's domain matches one of the configured
+ * Keycloak Identity Provider mapper that assigns a realm or client role based on the email
+ * domain of the federated/brokered user. If the email's domain matches one of the configured
  * allowed domains, the configured matched role is granted. Otherwise, an optional fallback
  * role can be granted.
  *
  * <p>Configuration properties:</p>
  * <ul>
- *   <li><code>allowedDomains</code> (string): Space separated list of allowed email domains
- *   (e.g. "example.com example.org"). Comparison is case-insensitive.</li>
- *   <li><code>matchedRole</code> (role): The realm role to grant when the user's email domain
- *   is contained in <code>allowedDomains</code>.</li>
- *   <li><code>fallbackRole</code> (role): Optional realm role to grant when the user's email
- *   domain does not match the allowed list.</li>
+ *   <li>
+ *       <code>allowedDomains</code> (string): Space separated list of allowed email domains 
+ *       (e.g. "example.com example.org"). Comparison is case-insensitive.
+ *   </li>
+ *   <li>
+ *       <code>domainMatchMode</code> (boolean): Defines how email domains are matched against 
+ *       the configured domain list.
+ *   <li>
+ *       <code>matchedRole</code> (role): The realm role to grant when the user's email domain 
+ *       is contained in <code>allowedDomains</code>.
+ *   </li>
+ *   <li>
+ *       <code>fallbackRole</code> (role): Optional realm role to grant when the user's email 
+ *       domain does not match the allowed list.
+ *   </li>
  * </ul>
  */
 public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
