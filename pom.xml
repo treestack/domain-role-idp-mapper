@@ -17,6 +17,7 @@
         <mockito.version>5.14.2</mockito.version>
         <testcontainers.version>1.18.3</testcontainers.version>
         <testcontainers-keycloak.version>3.1.0</testcontainers-keycloak.version>
+        <slf4j-simple.version>2.0.9</slf4j-simple.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -115,6 +116,12 @@
             <groupId>com.github.dasniko</groupId>
             <artifactId>testcontainers-keycloak</artifactId>
             <version>${testcontainers-keycloak.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${slf4j-simple.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
