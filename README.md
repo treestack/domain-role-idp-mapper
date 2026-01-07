@@ -51,6 +51,10 @@ Recommendations:
 - Tested with Keycloak 26.x
 - Java 17+
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.
+
 ## Installation
 1. Copy the latest release into your Keycloak `providers/` directory.
 2. Restart Keycloak.
