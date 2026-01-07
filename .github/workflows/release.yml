@@ -43,6 +43,7 @@ jobs:
         run: |
           for f in target/*.jar; do
             cosign sign-blob "$f" \
+              --yes \
               --output-signature "$f.sig" \
               --output-certificate "$f.pem"
           done
