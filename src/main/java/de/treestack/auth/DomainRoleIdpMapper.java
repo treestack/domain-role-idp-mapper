@@ -8,6 +8,7 @@ import org.keycloak.models.*;
 import org.keycloak.provider.ProviderConfigProperty;
 
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -45,6 +46,9 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
     private static final String CFG_DOMAIN_MATCH_MODE = "domainMatchMode";
     private static final String CFG_MATCHED_ROLE = "matchedRole";
     private static final String CFG_FALLBACK_ROLE = "fallbackRole";
+
+    // Not RFC compliant, but sufficient for our use case
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^@\\s]+@[^@\\s]+$");
 
     private static final List<ProviderConfigProperty> CONFIG_PROPERTIES;
 
@@ -268,15 +272,13 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
 
     /**
      * Check if the given email address is syntactically valid.
-     * Uses OWASP email regex for validation,
-     * cf. <a href="https://owasp.org/www-community/OWASP_Validation_Regex_Repository">OWASP Validation Regex Repository</a>
+     * Doesn't perform full RFC validation, just a basic check for presence of '@' and non-empty local and domain parts.
      */
     static boolean isValidEmail(@Nullable String email) {
         if (email == null || email.isBlank()) {
             return false;
         }
-        final String EMAIL_REGEX = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
-        return email.matches(EMAIL_REGEX);
+        return EMAIL_PATTERN.matcher(email).matches();
     }
 
     static String extractDomain(String email) {

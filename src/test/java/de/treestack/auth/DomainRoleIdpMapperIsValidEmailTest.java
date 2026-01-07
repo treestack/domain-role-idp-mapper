@@ -14,7 +14,8 @@ class DomainRoleIdpMapperIsValidEmailTest {
             "test@example.com",
             "first.last@example.com",
             "user+mailbox@sub.domain.tld",
-            "a@b.cd"
+            "a@b.cd",
+            "root@localhost"
     })
     void when_validEmail_expect_true(String email) {
         assertTrue(DomainRoleIdpMapper.isValidEmail(email));
@@ -26,15 +27,7 @@ class DomainRoleIdpMapperIsValidEmailTest {
             "   ",
             "testexample.com",
             "test@",
-            "@example.com",
-            "test@.com",
-            "test@example.",
-            "test@example.c",
-            "test@example.toolongtld",
-            "test..test@example.com",
-            ".test@example.com",
-            "test.@example.com",
-            "123@456.78"
+            "@example.com"
     })
     void when_invalidEmail_expect_false(String email) {
         assertFalse(DomainRoleIdpMapper.isValidEmail(email));
