@@ -8,21 +8,55 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
     strategy:
       matrix:
         profile: [ "keycloak-22" ]
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
           cache: maven
+
       - name: Build with Maven
         run: mvn clean package -P${{ matrix.profile }}
+
+      - name: Generate SHA-256 checksums
+        run: |
+          cd target
+          for f in *.jar; do
+            sha256sum "$f" > "$f.sha256"
+          done
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign artifacts with cosign
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          for f in target/*.jar; do
+            cosign sign-blob "$f" \
+              --output-signature "$f.sig" \
+              --output-certificate "$f.pem"
+          done
+
+      - name: Generate build provenance
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: target/*.jar
+
       - name: Upload JAR to Release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b
         with:
-          files: target/*.jar
-      
+          files: |
+            target/*.jar
+            target/*.jar.sha256
+            target/*.jar.sig
+            target/*.jar.pem
