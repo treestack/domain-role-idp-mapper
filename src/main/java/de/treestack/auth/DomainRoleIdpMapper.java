@@ -155,8 +155,10 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
         DomainMatchMode mode = DomainMatchMode.from(mapperModel.getConfig().get(CFG_DOMAIN_MATCH_MODE));
         if (matchesDomain(domain, cfg.allowedDomains(), mode)) {
             grantRole(user, cfg.matchedRole);
+            removeRole(user, cfg.fallbackRole);
         } else {
             grantRole(user, cfg.fallbackRole);
+            removeRole(user, cfg.matchedRole);
         }
     }
 
@@ -233,6 +235,19 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
         user.grantRole(role);
     }
 
+    static void removeRole(UserModel user, @Nullable RoleModel role) {
+        if (role == null) {
+            LOG.debugf("No role configured; no role changes for user %s", user.getUsername());
+            return;
+        }
+        if (!user.hasRole(role)) {
+            LOG.debugf("User %s does not have role %s; no action taken", user.getUsername(), role.getName());
+            return;
+        }
+        LOG.infof("Removing role %s from user %s", role, user.getUsername());
+        user.deleteRoleMapping(role);
+    }
+
     /**
      * Load and normalize configuration values from the mapper model.
      */
@@ -251,12 +266,24 @@ public class DomainRoleIdpMapper extends AbstractIdentityProviderMapper {
         );
     }
 
+    /**
+     * Check if the given email address is syntactically valid.
+     * Uses OWASP email regex for validation,
+     * cf. <a href="https://owasp.org/www-community/OWASP_Validation_Regex_Repository">OWASP Validation Regex Repository</a>
+     */
     static boolean isValidEmail(@Nullable String email) {
-        return email != null && email.contains("@");
+        if (email == null || email.isBlank()) {
+            return false;
+        }
+        final String EMAIL_REGEX = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
+        return email.matches(EMAIL_REGEX);
     }
 
     static String extractDomain(String email) {
-        return email.substring(email.indexOf('@') + 1).toLowerCase(Locale.ROOT);
+        String domain = email.substring(email.lastIndexOf('@') + 1).toLowerCase(Locale.ROOT).trim();
+        if (domain.isBlank())
+            throw new IllegalArgumentException("Email address has empty domain part: " + email);
+        return domain;
     }
 
     /**
