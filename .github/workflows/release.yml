@@ -36,11 +36,9 @@ jobs:
           done
 
       - name: Install cosign
-        uses: sigstore/cosign-installer@v3
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad
 
       - name: Sign artifacts with cosign
-        env:
-          COSIGN_EXPERIMENTAL: "1"
         run: |
           for f in target/*.jar; do
             cosign sign-blob "$f" \
